@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  github-runner:
+    image: myoung34/github-runner:latest
+    container_name: github-runner-bx-ee
+    restart: unless-stopped
+
+    environment:
+      # Organization configuration
+      ORG_NAME: ${ORG_NAME}
+      ACCESS_TOKEN: ${GITHUB_PAT}
+
+      # Runner configuration
+      RUNNER_NAME: ${RUNNER_NAME:-bx-ee-runner-1}
+      RUNNER_WORKDIR: /tmp/runner/work
+      RUNNER_GROUP: ${RUNNER_GROUP:-default}
+      LABELS: ${LABELS:-bx-ee,docker,linux}
+
+      # Ephemeral runner (recommended for security)
+      EPHEMERAL: ${EPHEMERAL:-true}
+
+      # Disable auto-update to prevent disruption
+      DISABLE_AUTO_UPDATE: ${DISABLE_AUTO_UPDATE:-false}
+
+    volumes:
+      # Runner work directory
+      - runner-work:/tmp/runner
+
+      # Docker-in-Docker support (if needed for workflows)
+      - /var/run/docker.sock:/var/run/docker.sock
+
+    # Resource limits to protect production services
+    deploy:
+      resources:
+        limits:
+          cpus: '${CPU_LIMIT:-2.0}'
+          memory: ${MEMORY_LIMIT:-2G}
+        reservations:
+          cpus: '${CPU_RESERVATION:-0.5}'
+          memory: ${MEMORY_RESERVATION:-512M}
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "Runner.Listener"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  runner-work:
+    driver: local

@@ -1,0 +1,16 @@
+# Environment file with secrets
+.env
+
+# Docker volumes and data
+runner-work/
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*.backup
+
+# OS files
+.DS_Store
+Thumbs.db

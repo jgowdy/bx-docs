@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  github-runner-windows:
+    image: myoung34/github-runner:latest-windows
+    container_name: github-runner-windows
+    restart: unless-stopped
+
+    environment:
+      # Organization configuration
+      ORG_NAME: ${ORG_NAME}
+      ACCESS_TOKEN: ${GITHUB_PAT}
+
+      # Runner configuration
+      RUNNER_NAME: ${RUNNER_NAME:-bx-ee-windows-runner-1}
+      RUNNER_WORKDIR: C:\actions-runner\_work
+      RUNNER_GROUP: ${RUNNER_GROUP:-default}
+      LABELS: ${LABELS:-bx-ee,windows,docker}
+
+      # Ephemeral runner (recommended for security)
+      EPHEMERAL: ${EPHEMERAL:-true}
+
+      # Disable auto-update to prevent disruption
+      DISABLE_AUTO_UPDATE: ${DISABLE_AUTO_UPDATE:-false}
+
+    volumes:
+      # Runner work directory
+      - runner-work:C:\actions-runner\_work
+
+      # Docker pipe for Windows (Docker-in-Docker support)
+      - //./pipe/docker_engine://./pipe/docker_engine
+
+    # Resource limits to protect host VM
+    deploy:
+      resources:
+        limits:
+          cpus: '${CPU_LIMIT:-2.0}'
+          memory: ${MEMORY_LIMIT:-4G}
+        reservations:
+          cpus: '${CPU_RESERVATION:-1.0}'
+          memory: ${MEMORY_RESERVATION:-1G}
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  runner-work:
+    driver: local
